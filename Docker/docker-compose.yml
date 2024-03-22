@@ -1,0 +1,57 @@
+version: '3.8'
+services:
+  cloudtrailmessagebroker:
+    image: ehudklein/cloudtrailmessagebroker
+    ports:
+      - "5042:8080" # Maps port 8080 in the container to port 5042 on the host
+    networks:
+      - cloudnet
+
+  cloudtrailingestor:
+    image: ehudklein/cloudtrailingestor
+    depends_on:
+      - cloudtrailmessagebroker # Ensures that cloudtrailmessagebroker is started first
+    ports:
+      - "5255:8080" # Maps port 8080 in the container to port 5255 on the host
+    networks:
+      - cloudnet
+
+  anomalydetection:
+    image: ehudklein/anomalydetection
+    depends_on:
+      - cloudtrailmessagebroker # Ensures that cloudtrailmessagebroker is started first
+    networks:
+      - cloudnet
+
+  localmongodb:
+    image: mongo # Assuming you're using the standard Mongo image from Docker Hub
+    ports:
+      - "27018:27017" # Maps port 27017 in the container to port 27018 on the host
+    networks:
+      - cloudnet
+    volumes:
+      - mongodb_data:/data/db # Persists MongoDB data between container restarts
+      
+  zookeeper:
+    image: wurstmeister/zookeeper
+    ports:
+      - "2181:2181"
+  kafka:
+    image: wurstmeister/kafka
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_CREATE_TOPICS: "MyTopic:1:1"
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INSIDE:PLAINTEXT,OUTSIDE:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: INSIDE://kafka:9092,OUTSIDE://localhost:9092
+      KAFKA_LISTENERS: INSIDE://0.0.0.0:9092,OUTSIDE://0.0.0.0:9093
+      KAFKA_INTER_BROKER_LISTENER_NAME: INSIDE
+    depends_on:
+      - zookeeper
+
+networks:
+  cloudnet: # Defines a network for inter-container communication
+
+volumes:
+  mongodb_data: # Defines a volume for MongoDB persistence

@@ -1,0 +1,8 @@
+# Use the official MongoDB image
+FROM mongo:latest
+
+ENV MONGO_INITDB_ROOT_USERNAME=mongoadmin
+ENV MONGO_INITDB_ROOT_PASSWORD=secret
+
+# Start MongoDB with the modified port
+CMD ["mongod", "--port", "27017", "--auth"]
