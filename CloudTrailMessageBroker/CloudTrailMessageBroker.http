@@ -1,6 +1,0 @@
-@CloudTrailMessageBroker_HostAddress = http://localhost:5042
-
-GET {{CloudTrailMessageBroker_HostAddress}}/weatherforecast/
-Accept: application/json
-
-###

@@ -2,6 +2,6 @@
 {
     public interface ICloudTrailLoadProvider
     {
-        Task Provide();
+        Task Provide(int amount);
     }
 }

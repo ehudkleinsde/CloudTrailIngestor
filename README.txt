@@ -1,16 +1,14 @@
 CloudTrailIngestor
 
 Setup:
-1. In the command line, navigate to CloudTrailIngestor\Docker. Run "docker-compose up". This will start everything.
-2. On your local machine, open the CloudTrailIngestor API - http://localhost:5255/swagger/index.html.
-3. On your local machine, open the message broker API (simple message broker implementation) - http://localhost:5042/swagger/index.html
+1. In the command line, navigate to CloudTrailIngestor\Docker. Run "docker-compose up". This will start everything. Images are shared on DockerHub.
+2. On your local machine, open the CloudTrailIngestor API swagger UI - http://localhost:5255/swagger/index.html.
 4. Install MongoDB Compass UI tool - https://www.mongodb.com/try/download/compass
 5. Connect to the docker mongodb instace in Compass via this connection string - "mongodb://localhost:27018/"
 
 Intro:
 1. CloudTrailIngestor REST API - to post CloudTrail events. Just a passthrough to the in-memory message broker. Has cache to dedup cloudTrailEvents.
-2. CloudTrailMessageBroker REST API - a simple, thread-safe, in-memory, message broker with topics.
-3. Anomalydetection backgroud service - performs polling on the message broker every 5sec, pulls cloudTrail events, and process them. Writes results to db when needed, after making sure they are not in the db already.
+2. Anomalydetection backgroud service - performs polling on the message broker every 5sec, pulls cloudTrail events, and process them. Writes results to db when needed, after making sure they are not in the db already.
 
 Dedup:
 1. CloudTrailIngestor has a co-located cache with 1hr TTL.

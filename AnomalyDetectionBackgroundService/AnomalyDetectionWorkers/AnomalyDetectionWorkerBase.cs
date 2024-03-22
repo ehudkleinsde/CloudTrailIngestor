@@ -1,90 +1,90 @@
 ﻿using Common.Contracts;
 using Common.Interfaces;
+using Confluent.Kafka;
 using Newtonsoft.Json;
 
 namespace AnomalyDetection.AnomalyDetections
 {
     public abstract class AnomalyDetectionWorkerBase : IAnomalyDetectionWorker
     {
+        protected static string kafkaBaseUrl = "localhost";
+
         protected Random _rand = new Random();
 
         protected Common.Interfaces.ILogger _logger;
         protected IDBDriver _dbDriver;
-        private static readonly HttpClient _client = new HttpClient();
 
-        protected abstract string TopicName { get; }
         protected abstract string AnomalyDetectionType { get; }
         protected abstract string AnomalyDetectionVersion { get; }
+        protected abstract ConsumerConfig ConsumerConfig { get; }
 
-        private Uri _messageQueueUri = new Uri("http://cloudtrailmessagebroker:8080/CloudTrailMessageBroker/DequeueAsync");
+        IConsumer<Ignore, string> _consumer;
+        CancellationTokenSource _cts;
 
         public AnomalyDetectionWorkerBase(Common.Interfaces.ILogger logger, IDBDriver dbDriver)
         {
             _logger = logger;
             _dbDriver = dbDriver;
+            _cts = new CancellationTokenSource();
+            _consumer = new ConsumerBuilder<Ignore, string>(ConsumerConfig).Build();
+            _consumer.Subscribe("cloudtrailtopic");
         }
 
         public abstract Task<int> AnalyzeAsync(CloudTrail cloudTrail);
 
         public async Task RunAsync()
         {
-            CloudTrail cloudTrail;
-
-            //TODO: add cancellationToken
-            while (true)
-            {
-                while ((cloudTrail = await DequeueAsync(TopicName)) == null)
-                {
-                    _logger.Info($"{nameof(AnomalyDetectionWorkerBase)}.{nameof(RunAsync)}", $"{TopicName} is empty");
-                    await Task.Delay(5000);
-                }
-
-                _logger.Info($"{nameof(AnomalyDetectionWorkerBase)}.{nameof(RunAsync)}", $"Got cloudTrail from {TopicName}");
-
-                AnomalyDetectionResult result = new();
-                result.CloudTrail = cloudTrail;
-                result.AnomalyDetectionType = AnomalyDetectionType;
-                result.AnomalyDetectionVersion = AnomalyDetectionVersion;
-
-                bool alreadyExists = await AlreadyExists(result);
-                _logger.Info($"{nameof(AnomalyDetectionWorkerBase)}.{nameof(RunAsync)}", $"AlreadyExistsInDB: {alreadyExists}, ID: {cloudTrail.EventType+"."+cloudTrail.EventId}");
-
-                if (!alreadyExists)
-                {
-                    var score = await AnalyzeAsync(cloudTrail);
-                    _logger.Info($"{nameof(AnomalyDetectionWorkerBase)}.{nameof(RunAsync)}", $"Score: {score}, ID: {cloudTrail.EventType + "." + cloudTrail.EventId}");
-
-                    if (score > 0)
-                    {
-                        result.AnomalyScore = score;
-                        result.ProcessingTimestampUTC = DateTime.UtcNow;
-
-                        await _dbDriver.UpsertAnomalyDetectionResultAsync(result);
-                    }
-                }
-            }
-        }
-
-        protected async Task<CloudTrail> DequeueAsync(string topicName)
-        {
-            string urlWithParameters = $"{_messageQueueUri}?topicName={topicName}";
+            _logger.Info($"{nameof(AnomalyDetectionWorkerBase)}.{nameof(RunAsync)}", $"Worker: {AnomalyDetectionType} - Start");
 
             try
             {
-                HttpResponseMessage response = await _client.GetAsync(urlWithParameters);
-                response.EnsureSuccessStatusCode();
+                while (true)
+                {
+                    try
+                    {
+                        await Task.Delay(1000);
 
-                string responseBody = await response.Content.ReadAsStringAsync();
+                        ConsumeResult<Ignore, string> cr = _consumer.Consume(_cts.Token);
+                        _logger.Info($"{nameof(AnomalyDetectionWorkerBase)}.{nameof(RunAsync)}", $"Worker: {AnomalyDetectionType}, Consumed message '{cr.Message.Value}' at: '{cr.TopicPartitionOffset}'.");
 
-                CloudTrail cloudTrail = JsonConvert.DeserializeObject<CloudTrail>(responseBody);
+                        CloudTrail cloudTrail = JsonConvert.DeserializeObject<CloudTrail>(cr.Value);
 
-                return cloudTrail;
+                        AnomalyDetectionResult result = new();
+                        result.CloudTrail = cloudTrail;
+                        result.AnomalyDetectionType = AnomalyDetectionType;
+                        result.AnomalyDetectionVersion = AnomalyDetectionVersion;
+
+                        bool alreadyExists = await AlreadyExists(result);
+                        _logger.Info($"{nameof(AnomalyDetectionWorkerBase)}.{nameof(RunAsync)}", $"Worker: {AnomalyDetectionType}, AlreadyExistsInDB: {alreadyExists}, ID: {cloudTrail.EventType + "." + cloudTrail.EventId}");
+
+                        if (!alreadyExists)
+                        {
+                            var score = await AnalyzeAsync(cloudTrail);
+                            _logger.Info($"{nameof(AnomalyDetectionWorkerBase)}.{nameof(RunAsync)}", $"Worker: {AnomalyDetectionType}, Score: {score}, ID: {cloudTrail.EventType + "." + cloudTrail.EventId}");
+
+                            if (score > 0)
+                            {
+                                result.AnomalyScore = score;
+                                result.ProcessingTimestampUTC = DateTime.UtcNow;
+
+                                await _dbDriver.UpsertAnomalyDetectionResultAsync(result);
+                            }
+                        }
+                    }
+                    catch (ConsumeException e)
+                    {
+                        _logger.Error($"{nameof(AnomalyDetectionWorkerBase)}.{nameof(RunAsync)}", e.Error.Reason, e);
+                    }
+                    catch(Exception e)
+                    {
+                        _logger.Error($"{nameof(AnomalyDetectionWorkerBase)}.{nameof(RunAsync)}", "Error", e);
+                    }
+                }
             }
-            catch (HttpRequestException e)
+            catch (OperationCanceledException)
             {
-                Console.WriteLine("\nException Caught!");
-                Console.WriteLine("Message :{0} ", e.Message);
-                return null;
+                _logger.Info($"{nameof(AnomalyDetectionWorkerBase)}.{nameof(RunAsync)}", "Closing");
+                _consumer.Close();
             }
         }
 
