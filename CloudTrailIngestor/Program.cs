@@ -1,11 +1,13 @@
 using Cache;
 using Confluent.Kafka;
+using DBDriver;
 using Logging;
 using SimpleInjector;
 
 internal class Program
 {
     private static string kafkaBootstrap = "kafka";
+    private static string _mongoDBConnStr = "mongodb://localmongodb:27017";
 
     private static void Main(string[] args)
     {
@@ -21,6 +23,7 @@ internal class Program
         {
             BootstrapServers = $"{kafkaBootstrap}:9092",
             //AllowAutoCreateTopics = true,
+            EnableIdempotence = true
         };
 
         IProducer<string, string> producer = new ProducerBuilder<string, string>(config).Build();
@@ -33,6 +36,7 @@ internal class Program
             options.AddAspNetCore().AddControllerActivation();
         });
 
+        var mongoDB = new MongoDBDriver(_mongoDBConnStr, "AnomalyDetectionResult");
         container.Register<Common.Interfaces.IMemoryCacheClient, MemoryCacheClient>(Lifestyle.Singleton);
         container.Register<Common.Interfaces.ILogger>(() => new Serilogger("CloudTrailIngestor"), Lifestyle.Singleton);
         container.Register<IProducer<string, string>>(() => producer, Lifestyle.Singleton);

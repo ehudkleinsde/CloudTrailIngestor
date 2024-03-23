@@ -1,19 +1,27 @@
 CloudTrailIngestor
+https://github.com/ehudkleinsde/CloudTrailIngestor
 
-Notes:
-1. Design image attached to the email.
-2. Code is available here - https://github.com/ehudkleinsde/CloudTrailIngestor
+Important Note: For the coding assignment, I chose a simple design due to time constraints, and based on some practical real life assumptions.
+In this text I will present it, and then explain a better design I would have implemented had I had more time.
 
-# Components:
-1. CloudTrailIngestor REST API - Sends CloudTrail events to a Kafka topic after schema validation and dedup using cache.
-2. Anomaly Detection backgroud service - has multiple instances of 2 kinds of worker threads, simulating 2 different anomalies types.
-Has 20 worker threads for AnomalyType1, and another 20 worker threads for AnomalyType2. These threads read evcents from Kafka and process them.
-They writes results to db when score > 0. They can perform dedup based on data in the db but currently this is commented out and dedup is done on API side.
+Specifically, I chose a design with simple dedup. I assumed we wish to avoid most of the duplications, but that:
+a. We don't get that many from AWS anyhow
+b. If we do get duplications from AWS, its usually within the first hour of the CloudTrail event happening
+c. If we have some duplications, it's not a big issue
+
+# System Components:
+1. CloudTrailIngestor - REST API, sends CloudTrail events to a Kafka topic after schema validation and (simple) dedup.
+
+2. Anomaly Detection backgroud service - has multiple instances of 2 kinds of worker threads, simulating 2 different anomalies detection types.
+It runs multiple worker threads for AnomalyType1 and AnomalyType2. These threads read events from Kafka and process them.
+They writes results to db when score > 0. They can perform dedup based on data in the db but currently this is commented out and dedup is only done on API side.
+
 3. CloudTrailProvider - For stress testing the system. Randomly generates and pushes CloudTrail events to the ingestor api at a high rate.
+
 4. Dedup - Done based on the combination of EventType and EventID, only for events arriving less than 1hr apart.
-a. CloudTrailIngestor has a co-located cache with 1hr TTL.
-b. Anomaly Detection Workers - can check if an event already has a processing result in the db, and avoid recalculating. 
-DB is indexed appropriatley to support this. (currently commented out).
+	a. CloudTrailIngestor has an in-mem cache with 1hr TTL. Consumes about 1GB of RAM for every 1M unique messages.
+	b. Anomaly Detection Workers - can check if an event already has a processing result in the db, and avoid recalculating.
+	DB is indexed appropriatley to support this. (currently commented out). This doesnt help in case the event's anomaly score is 0.
 
 # Stress Test results:
 On an i7-13700K cpu desktop machine, 128GB DDR4 3600GHz, PCIe4 SSD nvme 7GB/s 1M IOPS, 
@@ -26,6 +34,8 @@ Single anomaly type, 20 detection worker threads:
 Two anomaly types, 20 worker threads each (40 total):
 1. Pushing all CloudTrail events - same as above
 2. Total processing time, generating 2M records on MongoDB, took 204sec, ~5k events per second (linear).
+
+All events were written to the DB on all runs.
 
 # Setup instructions:
 1. Install MongoDB Compass UI tool - https://www.mongodb.com/try/download/compass, so you can watch anomalies written to the db at real time.
@@ -132,16 +142,24 @@ Therefore, this will contribute to reseliency, as if one pipeline fails, can red
 Having the Kafka ConsumerConfig in the child class was my mistake, should be in the base class as well :-)
 3. Very easy to add more worker threads, can control how many worker threads of each type [there is probably a nicer way to handle the DI registration, sorry.. :-) ]
 
-#Alternative Dedup design suggestion (a general idea):
+# Alternative Dedup design suggestions:
 1. Implement a bloom filter - for each event identifier, run N hash functions, each returning an integer.
 Mod the integers and use them as indexes in a bit integer. If all N respective bits are set to 1, there is a probability that
 the event is duplicated - need to check the db. If even 1 bit is set to 0, the event is not duplicated.
 Lastly, set all the 0 bits encountered to 1.
 Not going into probabilistic details here.. :-)
 
-Missing features:
+Dedup alternatives if assumption is invalid:
+1. As said in the beginning, I assumed dedup is good to have, but not a high priority:
+a. We don't get too many duplicated events from AWS
+b. When we do, they arrive within the same hour, and our API controller is stable and does not reset often so cache is solid
+c. Even if we get some in, its not a big deal, just consumes compute and storage resources.
+
+
+
+# Missing features:
 1. We currently don't have rate limiting and auth - add an API gateway to provide these, and redirect valid calls to the downstream.
 
 
-Error handling:
+# Error handling:
 We currently do not have anything to handle dropped CloudTrail events besides logging.

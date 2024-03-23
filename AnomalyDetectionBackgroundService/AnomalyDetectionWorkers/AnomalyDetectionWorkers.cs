@@ -14,7 +14,6 @@ namespace AnomalyDetection.AnomalyDetections
             GroupId = $"{nameof(AnomalyDetectionWorker1)}-consumer-group",
             AutoOffsetReset = AutoOffsetReset.Earliest,
             EnableAutoCommit = true,
-
         };
 
         public AnomalyDetectionWorker1(Common.Interfaces.ILogger logger, IDBDriver dbDriver) : base(logger, dbDriver) { }

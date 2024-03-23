@@ -16,6 +16,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Cache\Cache.csproj" />
     <ProjectReference Include="..\Common\Common.csproj" />
+    <ProjectReference Include="..\DBDriver\DBDriver.csproj" />
     <ProjectReference Include="..\Serilogger\Serilogger.csproj" />
   </ItemGroup>
 
