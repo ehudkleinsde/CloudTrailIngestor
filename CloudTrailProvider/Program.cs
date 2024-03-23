@@ -7,7 +7,7 @@ internal class Program
         await Console.Out.WriteLineAsync(DateTime.UtcNow.ToLongTimeString());
         CloudTrailLoadProvider cloudTrailLoadProvider = new CloudTrailLoadProvider();
 
-        await Task.Delay(60000);
+        await Task.Delay(90000);
 
         Task task1 = cloudTrailLoadProvider.ProvideAsync(500_000);
         Task task2 = cloudTrailLoadProvider.ProvideAsync(500_000);

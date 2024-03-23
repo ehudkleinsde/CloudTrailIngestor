@@ -15,7 +15,19 @@ namespace MongoDB
             _dbName = dbName;
         }
 
-        public async Task InsertAnomalyDetectionResultAsync(AnomalyDetectionResult anomalyDetectionResult)
+        public async Task<AnomalyDetectionResult> GetAnomalyDetectionResultAsync(AnomalyDetectionResult anomalyDetectionResult)
+        {
+            await CreateIndexAsync();
+
+            var database = _client.GetDatabase(_dbName);
+            var collection = database.GetCollection<AnomalyDetectionResult>(nameof(AnomalyDetectionResult));
+            var idFilter = Builders<AnomalyDetectionResult>.Filter.Eq("CloudTrail.EventId", anomalyDetectionResult.CloudTrail.EventId);
+            var typeFilter = Builders<AnomalyDetectionResult>.Filter.Eq("CloudTrail.EventType", anomalyDetectionResult.CloudTrail.EventType.ToString());
+            var detectionTypeFilter = Builders<AnomalyDetectionResult>.Filter.Eq("AnomalyDetectionType", anomalyDetectionResult.AnomalyDetectionType);
+            return await collection.Find(idFilter & typeFilter & detectionTypeFilter).FirstOrDefaultAsync();
+        }
+
+        public async Task UpsertAnomalyDetectionResultAsync(AnomalyDetectionResult anomalyDetectionResult)
         {
             await CreateIndexAsync();
 

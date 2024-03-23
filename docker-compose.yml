@@ -63,8 +63,8 @@ services:
       - "9042:9042"
     networks:
       - cloudnet
-    volumes:
-      - cassandra_data:/var/lib/cassandra
+    #volumes:
+     # - cassandra_data_1:/var/lib/cassandra
     environment:
       CASSANDRA_CLUSTER_NAME: CloudCluster
       CASSANDRA_DC: CloudDC
@@ -74,10 +74,24 @@ services:
         limits:
           cpus: '2.0'
           #memory: 4G
+          
+  cassandra2:
+    image: cassandra:latest
+    networks:
+      - cloudnet
+    #volumes:
+    #  - cassandra_data_2:/var/lib/cassandra
+    environment:
+      CASSANDRA_CLUSTER_NAME: CloudCluster
+      CASSANDRA_DC: CloudDC
+      CASSANDRA_RACK: CloudRack
+      CASSANDRA_SEEDS: cassandra
+    depends_on:
+      - cassandra
 
 networks:
   cloudnet: {}
 
 volumes:
-  mongodb_data: {}
-  cassandra_data: {}
+  cassandra_data_1: {}
+  cassandra_data_2: {}

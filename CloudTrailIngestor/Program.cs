@@ -51,7 +51,7 @@ internal class Program
         container.Verify();
 
         var service = container.GetInstance<ICassandraDBDriver>();
-        await Task.Delay(50_000);//let cassandra boot
+        await Task.Delay(60_000);//let cassandra boot
         await service.InitAsync();
 
         // Configure the HTTP request pipeline.
