@@ -1,7 +1,7 @@
 ﻿using AnomalyDetection;
 using AnomalyDetection.AnomalyDetections;
 using Common.Interfaces;
-using DBDriver;
+using MongoDB;
 using Logging;
 using SimpleInjector;
 
@@ -13,7 +13,7 @@ internal class Program
     {
         var container = new SimpleInjector.Container();
 
-        var mongoDB = new MongoDBDriver(_mongoDBConnStr, "AnomalyDetectionResult");
+        var mongoDB = new MongoDB.MongoDBDriver(_mongoDBConnStr, "AnomalyDetectionResult");
         var serilogger = new Serilogger("AnomalyDetectionBackgroundService");
 
         AnomalyDetectionWorker1 anomalyDetectionWorker1_0 = new(serilogger, mongoDB);

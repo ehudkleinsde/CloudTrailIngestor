@@ -65,7 +65,7 @@ namespace AnomalyDetection.AnomalyDetections
                                 result.AnomalyScore = score;
                                 result.ProcessingTimestampUTC = DateTime.UtcNow;
                                 _logger.Warn($"{nameof(AnomalyDetectionWorkerBase)}.{nameof(RunAsync)}", $"Persisted event to db");
-                                await _dbDriver.UpsertAnomalyDetectionResultAsync(result);
+                                await _dbDriver.InsertAnomalyDetectionResultAsync(result);
                             }
                         }
                     }
@@ -89,7 +89,6 @@ namespace AnomalyDetection.AnomalyDetections
         protected async Task<bool> AlreadyExists(AnomalyDetectionResult anomalyDetectionResult)
         {
             return false;
-            return await _dbDriver.GetAnomalyDetectionResultAsync(anomalyDetectionResult) != null;
         }
     }
 }

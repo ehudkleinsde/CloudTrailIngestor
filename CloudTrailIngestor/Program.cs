@@ -1,6 +1,7 @@
 using Cache;
+using Cassandra;
+using Common.Interfaces;
 using Confluent.Kafka;
-using DBDriver;
 using Logging;
 using SimpleInjector;
 
@@ -9,7 +10,7 @@ internal class Program
     private static string kafkaBootstrap = "kafka";
     private static string _mongoDBConnStr = "mongodb://localmongodb:27017";
 
-    private static void Main(string[] args)
+    private static async Task Main(string[] args)
     {
         var builder = WebApplication.CreateBuilder(args);
 
@@ -36,7 +37,7 @@ internal class Program
             options.AddAspNetCore().AddControllerActivation();
         });
 
-        var mongoDB = new MongoDBDriver(_mongoDBConnStr, "AnomalyDetectionResult");
+        container.Register<ICassandraDBDriver, CassandraDBDriver>(Lifestyle.Singleton);
         container.Register<Common.Interfaces.IMemoryCacheClient, MemoryCacheClient>(Lifestyle.Singleton);
         container.Register<Common.Interfaces.ILogger>(() => new Serilogger("CloudTrailIngestor"), Lifestyle.Singleton);
         container.Register<IProducer<string, string>>(() => producer, Lifestyle.Singleton);
@@ -48,6 +49,10 @@ internal class Program
         app.Services.UseSimpleInjector(container);
 
         container.Verify();
+
+        var service = container.GetInstance<ICassandraDBDriver>();
+        await Task.Delay(50_000);//let cassandra boot
+        await service.InitAsync();
 
         // Configure the HTTP request pipeline.
         /*if (app.Environment.IsDevelopment())

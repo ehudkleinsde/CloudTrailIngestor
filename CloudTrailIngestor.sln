@@ -13,7 +13,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Components", "Components", 
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Services", "Services", "{C1A0625C-7B24-4D73-9975-CA13D510B95A}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DBDriver", "DBDriver\DBDriver.csproj", "{EFF32863-4EA2-45DD-88BC-767FB793931F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MongoDBDriver", "MongoDBDriver\MongoDBDriver.csproj", "{EFF32863-4EA2-45DD-88BC-767FB793931F}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AnomalyDetectionBackgroundService", "AnomalyDetectionBackgroundService\AnomalyDetectionBackgroundService.csproj", "{13E45C30-D02E-4596-AF95-915D95049C71}"
 EndProject
@@ -25,6 +25,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CloudTrailProvider", "CloudTrailProvider\CloudTrailProvider.csproj", "{33D16A13-9C32-4BC2-9B22-9FB900046BBA}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CassandraDBDriver", "CassandraDBDriver\CassandraDBDriver.csproj", "{28830068-2B01-4B6B-BBCC-D8A93B69184C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -60,6 +62,10 @@ Global
 		{33D16A13-9C32-4BC2-9B22-9FB900046BBA}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{33D16A13-9C32-4BC2-9B22-9FB900046BBA}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{33D16A13-9C32-4BC2-9B22-9FB900046BBA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{28830068-2B01-4B6B-BBCC-D8A93B69184C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{28830068-2B01-4B6B-BBCC-D8A93B69184C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{28830068-2B01-4B6B-BBCC-D8A93B69184C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{28830068-2B01-4B6B-BBCC-D8A93B69184C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -72,6 +78,7 @@ Global
 		{13E45C30-D02E-4596-AF95-915D95049C71} = {C1A0625C-7B24-4D73-9975-CA13D510B95A}
 		{CBA74533-9EC7-4447-AE3B-A547A0300BBE} = {C320DAC7-3166-465D-8D7B-7C37ACE7D35D}
 		{33D16A13-9C32-4BC2-9B22-9FB900046BBA} = {C1A0625C-7B24-4D73-9975-CA13D510B95A}
+		{28830068-2B01-4B6B-BBCC-D8A93B69184C} = {C320DAC7-3166-465D-8D7B-7C37ACE7D35D}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {A378F8D2-EBE7-4BCF-9832-AB5EDDA27B02}

@@ -4,6 +4,7 @@ services:
     image: ehudklein/cloudtrailingestor
     depends_on:
       - kafka
+      - cassandra
     ports:
       - "5255:8080"
     networks:
@@ -12,7 +13,8 @@ services:
   anomalydetection:
     image: ehudklein/anomalydetection
     depends_on:
-      - cloudtrailprovider
+      - kafka
+      - localmongodb
     networks:
       - cloudnet
       
@@ -29,8 +31,8 @@ services:
       - "27018:27017"
     networks:
       - cloudnet
-    volumes:
-      - mongodb_data:/data/db
+    #volumes:
+      #- mongodb_data:/data/db
 
   zookeeper:
     image: wurstmeister/zookeeper
@@ -55,8 +57,27 @@ services:
     networks:
       - cloudnet
 
+  cassandra:
+    image: cassandra:latest
+    ports:
+      - "9042:9042"
+    networks:
+      - cloudnet
+    volumes:
+      - cassandra_data:/var/lib/cassandra
+    environment:
+      CASSANDRA_CLUSTER_NAME: CloudCluster
+      CASSANDRA_DC: CloudDC
+      CASSANDRA_RACK: CloudRack
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          #memory: 4G
+
 networks:
   cloudnet: {}
 
 volumes:
   mongodb_data: {}
+  cassandra_data: {}

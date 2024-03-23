@@ -15,7 +15,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Common\Common.csproj" />
-    <ProjectReference Include="..\DBDriver\DBDriver.csproj" />
+    <ProjectReference Include="..\MongoDBDriver\MongoDBDriver.csproj" />
     <ProjectReference Include="..\Serilogger\Serilogger.csproj" />
   </ItemGroup>
 

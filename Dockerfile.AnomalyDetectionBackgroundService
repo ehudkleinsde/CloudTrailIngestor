@@ -9,7 +9,8 @@ COPY CloudTrailIngestor/CloudTrailIngestor.csproj ./CloudTrailIngestor/
 COPY CloudTrailProvider/CloudTrailProvider.csproj ./CloudTrailProvider/
 COPY Cache/Cache.csproj ./Cache/
 COPY Common/Common.csproj ./Common/
-COPY DBDriver/DBDriver.csproj ./DBDriver/
+COPY MongoDBDriver/MongoDBDriver.csproj ./MongoDBDriver/
+COPY CassandraDBDriver/CassandraDBDriver.csproj ./CassandraDBDriver/
 COPY Serilogger/Serilogger.csproj ./Serilogger/
 
 RUN dotnet restore
@@ -20,7 +21,8 @@ COPY CloudTrailIngestor/. ./CloudTrailIngestor/
 COPY CloudTrailProvider/. ./CloudTrailProvider/
 COPY Cache/. ./Cache/
 COPY Common/. ./Common/
-COPY DBDriver/. ./DBDriver/
+COPY MongoDBDriver/. ./MongoDBDriver/
+COPY CassandraDBDriver/. ./CassandraDBDriver/
 COPY Serilogger/. ./Serilogger/
 
 

@@ -2,7 +2,7 @@
 using Common.Interfaces;
 using MongoDB.Driver;
 
-namespace DBDriver
+namespace MongoDB
 {
     public class MongoDBDriver : IDBDriver
     {
@@ -15,19 +15,7 @@ namespace DBDriver
             _dbName = dbName;
         }
 
-        public async Task<AnomalyDetectionResult> GetAnomalyDetectionResultAsync(AnomalyDetectionResult anomalyDetectionResult)
-        {
-            await CreateIndexAsync();
-
-            var database = _client.GetDatabase(_dbName);
-            var collection = database.GetCollection<AnomalyDetectionResult>(nameof(AnomalyDetectionResult));
-            var idFilter = Builders<AnomalyDetectionResult>.Filter.Eq("CloudTrail.EventId", anomalyDetectionResult.CloudTrail.EventId);
-            var typeFilter = Builders<AnomalyDetectionResult>.Filter.Eq("CloudTrail.EventType", anomalyDetectionResult.CloudTrail.EventType.ToString());
-            var detectionTypeFilter = Builders<AnomalyDetectionResult>.Filter.Eq("AnomalyDetectionType", anomalyDetectionResult.AnomalyDetectionType);
-            return await collection.Find(idFilter & typeFilter & detectionTypeFilter).FirstOrDefaultAsync();
-        }
-
-        public async Task UpsertAnomalyDetectionResultAsync(AnomalyDetectionResult anomalyDetectionResult)
+        public async Task InsertAnomalyDetectionResultAsync(AnomalyDetectionResult anomalyDetectionResult)
         {
             await CreateIndexAsync();
 
@@ -37,9 +25,6 @@ namespace DBDriver
             var idFilter = Builders<AnomalyDetectionResult>.Filter.Eq("CloudTrail.EventId", anomalyDetectionResult.CloudTrail.EventId);
             var eventTypeFilter = Builders<AnomalyDetectionResult>.Filter.Eq("CloudTrail.EventType", anomalyDetectionResult.CloudTrail.EventType.ToString());
             var detectionTypeFilter = Builders<AnomalyDetectionResult>.Filter.Eq("AnomalyDetectionType", anomalyDetectionResult.AnomalyDetectionType);
-
-            /*var options = new UpdateOptions { IsUpsert = true };
-            await collection.ReplaceOneAsync(idFilter & eventTypeFilter & detectionTypeFilter, anomalyDetectionResult, options);*/
 
             await collection.InsertOneAsync(anomalyDetectionResult);
         }
