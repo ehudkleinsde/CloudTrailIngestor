@@ -24,7 +24,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		README.txt = README.txt
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CloudTrailProvider", "CloudTrailProvider\CloudTrailProvider.csproj", "{33D16A13-9C32-4BC2-9B22-9FB900046BBA}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CloudTrailProvider", "CloudTrailProvider\CloudTrailProvider.csproj", "{33D16A13-9C32-4BC2-9B22-9FB900046BBA}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

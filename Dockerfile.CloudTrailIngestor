@@ -4,9 +4,9 @@ WORKDIR /app
 
 # Copy csproj and restore any dependencies (via NuGet)
 COPY *.sln .
-COPY CloudTrailMessageBroker/CloudTrailMessageBroker.csproj ./CloudTrailMessageBroker/
 COPY AnomalyDetectionBackgroundService/AnomalyDetectionBackgroundService.csproj ./AnomalyDetectionBackgroundService/
 COPY CloudTrailIngestor/CloudTrailIngestor.csproj ./CloudTrailIngestor/
+COPY CloudTrailProvider/CloudTrailProvider.csproj ./CloudTrailProvider/
 COPY Cache/Cache.csproj ./Cache/
 COPY Common/Common.csproj ./Common/
 COPY DBDriver/DBDriver.csproj ./DBDriver/
@@ -15,7 +15,7 @@ COPY Serilogger/Serilogger.csproj ./Serilogger/
 RUN dotnet restore
 
 # Copy the project files and build our release
-COPY CloudTrailMessageBroker/. ./CloudTrailMessageBroker/
+COPY CloudTrailProvider/. ./CloudTrailProvider/
 COPY AnomalyDetectionBackgroundService/. ./AnomalyDetectionBackgroundService/
 COPY CloudTrailIngestor/. ./CloudTrailIngestor/
 COPY Cache/. ./Cache/
@@ -23,11 +23,11 @@ COPY Common/. ./Common/
 COPY DBDriver/. ./DBDriver/
 COPY Serilogger/. ./Serilogger/
 
-
-RUN dotnet publish AnomalyDetectionBackgroundService/AnomalyDetectionBackgroundService.csproj -c Release -o out
+RUN dotnet publish CloudTrailIngestor/CloudTrailIngestor.csproj -c Release -o out
 
 # Build runtime image using the ASP.NET Core runtime
 FROM mcr.microsoft.com/dotnet/aspnet:latest
 WORKDIR /app
 COPY --from=build-env /app/out .
-ENTRYPOINT ["dotnet", "AnomalyDetectionBackgroundService.dll"]
+EXPOSE 5255
+ENTRYPOINT ["dotnet", "CloudTrailIngestor.dll"]

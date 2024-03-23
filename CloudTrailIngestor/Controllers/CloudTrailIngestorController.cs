@@ -3,6 +3,7 @@ using Common.Interfaces;
 using Confluent.Kafka;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
+using System.Collections.Concurrent;
 
 namespace CoudTrailIngestor.Controllers
 {
@@ -15,23 +16,19 @@ namespace CoudTrailIngestor.Controllers
 
         private TimeSpan _cacheTTL = TimeSpan.FromHours(1);
 
-        private static string kafkaBootstrap = "localhost";
-
         private ProducerConfig _config;
-        private IProducer<Null, string> _producer;
         private string _topic = "cloudtrailtopic";
+        private IProducer<string, string> _producer;
 
-        public CloudTrailIngestorController(Common.Interfaces.ILogger logger, IMemoryCacheClient cache)
+        private ConcurrentDictionary<string, Task> _tasks;
+
+        public CloudTrailIngestorController(Common.Interfaces.ILogger logger, IMemoryCacheClient cache, IProducer<string, string> producer)
         {
             _logger = logger;
             _cache = cache;
+            _producer = producer;
 
-            _config = new ProducerConfig
-            {
-                BootstrapServers = $"{kafkaBootstrap}:9092",
-            };
-
-            _producer = new ProducerBuilder<Null, string>(_config).Build();
+            _tasks = new();
         }
 
         [HttpPost(Name = nameof(PostCloudTrailAsync))]
@@ -46,7 +43,10 @@ namespace CoudTrailIngestor.Controllers
             }
 
             string eventIdentifier = $"{cloudTrail.EventType}.{cloudTrail.EventId}";
-            if (_cache.Get(eventIdentifier) != null)
+
+            var inCache = _cache.Get(eventIdentifier);
+
+            if (inCache != null)
             {
                 _logger.Info($"{nameof(CloudTrailIngestorController)}.{nameof(PostCloudTrailAsync)}", $"Found in cache: {eventIdentifier}");
                 return Ok();
@@ -74,9 +74,41 @@ namespace CoudTrailIngestor.Controllers
         {
             try
             {
-                var message = new Message<Null, string> { Value = JsonConvert.SerializeObject(cloudTrail) };
-                DeliveryResult<Null, string> deliveryReport = await _producer.ProduceAsync(_topic, message);
-                _logger.Info($"{nameof(CloudTrailIngestorController)}.{nameof(EnqueueAsync)}", $"Message sent to topic");
+                var message = new Message<string, string> { Key = $"{cloudTrail.EventId}.{cloudTrail.EventType}", Value = JsonConvert.SerializeObject(cloudTrail) };
+
+                Task<Task<DeliveryResult<string, string>?>> task = _producer.ProduceAsync(_topic, message)
+                                   .ContinueWith(async t =>
+                                   {
+                                       if (!t.IsFaulted && t.Result.Status == PersistenceStatus.Persisted)
+                                       {
+                                           //_logger.Info($"{nameof(CloudTrailIngestorController)}.{nameof(EnqueueAsync)}", $"Delivered message to {t.Result.TopicPartitionOffset}");
+
+                                           int removeRetry = 0;
+                                           while (removeRetry < 10 && !_tasks.TryRemove(cloudTrail.EventId + cloudTrail.EventType.ToString(), out Task done))
+                                           {
+                                               removeRetry++;
+                                               await Task.Delay(10);
+                                           }
+
+                                           //TODO: handle cant remove from dictionary
+
+                                           if (_tasks.Count == 0)
+                                           {
+                                               //_logger.Info($"{nameof(CloudTrailIngestorController)}.{nameof(EnqueueAsync)}", $"Delivery report queue is empty!");
+                                           }
+
+                                           return t.Result;
+                                       }
+                                       else
+                                       {
+                                           //_logger.Warn($"{nameof(CloudTrailIngestorController)}.{nameof(EnqueueAsync)}", $"Failed to deliver message: {t.Exception?.Message ?? t.Result.Status.ToString()}");
+                                           // TODO: Implement retry
+                                           return null;
+                                       }
+                                   });
+
+                _tasks[cloudTrail.EventId + cloudTrail.EventType.ToString()] = task;
+                _logger.Info($"{nameof(CloudTrailIngestorController)}.{nameof(EnqueueAsync)}", $"Message added to send task list");
             }
             catch (ProduceException<Null, string> e)
             {

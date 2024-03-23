@@ -9,6 +9,7 @@ namespace Logging
         public Serilogger(string appName)
         {
             _logger = new LoggerConfiguration()
+                .MinimumLevel.Warning()
                 .WriteTo.Console()
                 .WriteTo.File($"logs/{appName}.txt", rollingInterval: RollingInterval.Day)
                 .CreateLogger();

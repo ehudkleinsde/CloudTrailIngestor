@@ -7,22 +7,23 @@ namespace CloudTrailProvider
 {
     internal class CloudTrailLoadProvider : ICloudTrailLoadProvider
     {
-        private Uri _messageQueueUri = new Uri("http://cloudtrailmessagebroker:8080/CloudTrailMessageBroker/EnqueueAsync");
-        private HttpClient _httpClient;
+        private Uri _messageQueueUri = new Uri("http://cloudtrailingestor:8080/CloudTrailIngestor");
+        
         private Random _rnd;
 
         public CloudTrailLoadProvider()
         {
-            _httpClient = new HttpClient();
             _rnd = new Random();
         }
 
-        public async Task Provide(int amount)
+        public async Task ProvideAsync(int amount)
         {
+            await Task.Delay(5000);
+
             int provided = 0;
             CloudTrail random;
             HttpRequestMessage request;
-            string responseContent;
+            HttpClient _httpClient = new HttpClient();
 
             while (provided < amount)
             {
@@ -33,12 +34,8 @@ namespace CloudTrailProvider
 
                 try
                 {
-                    var response = await _httpClient.SendAsync(request);
-
-                    if (response.IsSuccessStatusCode)
-                    {
-                        responseContent = await response.Content.ReadAsStringAsync();
-                    }
+                     await _httpClient.SendAsync(request);
+                    await Console.Out.WriteLineAsync("Sent newly random generated CloudTrailEvent");
                 }
                 catch (Exception ex)
                 {
@@ -50,7 +47,8 @@ namespace CloudTrailProvider
         {
             int rnd = _rnd.Next(1, 5);
 
-            return new() {
+            var cloudTrail = new CloudTrail()
+            {
                 AffectedAssets = GenerateRandomStringArray(),
                 EventId = Guid.NewGuid(),
                 EventType = rnd < 5 ? EventType.Read : EventType.Create,
@@ -58,6 +56,8 @@ namespace CloudTrailProvider
                 RoleId = Guid.NewGuid(),
                 TimestampUTC = DateTime.UtcNow,
             };
+
+            return cloudTrail;
         }
 
         private string[] GenerateRandomStringArray()

@@ -38,8 +38,10 @@ namespace DBDriver
             var eventTypeFilter = Builders<AnomalyDetectionResult>.Filter.Eq("CloudTrail.EventType", anomalyDetectionResult.CloudTrail.EventType.ToString());
             var detectionTypeFilter = Builders<AnomalyDetectionResult>.Filter.Eq("AnomalyDetectionType", anomalyDetectionResult.AnomalyDetectionType);
 
-            var options = new UpdateOptions { IsUpsert = true };
-            await collection.ReplaceOneAsync(idFilter & eventTypeFilter & detectionTypeFilter, anomalyDetectionResult, options);
+            /*var options = new UpdateOptions { IsUpsert = true };
+            await collection.ReplaceOneAsync(idFilter & eventTypeFilter & detectionTypeFilter, anomalyDetectionResult, options);*/
+
+            await collection.InsertOneAsync(anomalyDetectionResult);
         }
 
         private async Task CreateIndexAsync()

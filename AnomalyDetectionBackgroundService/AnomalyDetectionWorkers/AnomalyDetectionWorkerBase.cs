@@ -7,7 +7,7 @@ namespace AnomalyDetection.AnomalyDetections
 {
     public abstract class AnomalyDetectionWorkerBase : IAnomalyDetectionWorker
     {
-        protected static string kafkaBaseUrl = "localhost";
+        protected static string kafkaBaseUrl = "kafka";
 
         protected Random _rand = new Random();
 
@@ -34,7 +34,7 @@ namespace AnomalyDetection.AnomalyDetections
 
         public async Task RunAsync()
         {
-            _logger.Info($"{nameof(AnomalyDetectionWorkerBase)}.{nameof(RunAsync)}", $"Worker: {AnomalyDetectionType} - Start");
+            _logger.Warn($"{nameof(AnomalyDetectionWorkerBase)}.{nameof(RunAsync)}", $"Worker: {AnomalyDetectionType} - Start");
 
             try
             {
@@ -42,10 +42,8 @@ namespace AnomalyDetection.AnomalyDetections
                 {
                     try
                     {
-                        await Task.Delay(1000);
-
                         ConsumeResult<Ignore, string> cr = _consumer.Consume(_cts.Token);
-                        _logger.Info($"{nameof(AnomalyDetectionWorkerBase)}.{nameof(RunAsync)}", $"Worker: {AnomalyDetectionType}, Consumed message '{cr.Message.Value}' at: '{cr.TopicPartitionOffset}'.");
+                        _logger.Info($"{nameof(AnomalyDetectionWorkerBase)}.{nameof(RunAsync)}", $"Worker: {AnomalyDetectionType}, Consumed message at: '{cr.TopicPartitionOffset}'.");
 
                         CloudTrail cloudTrail = JsonConvert.DeserializeObject<CloudTrail>(cr.Value);
 
@@ -66,7 +64,7 @@ namespace AnomalyDetection.AnomalyDetections
                             {
                                 result.AnomalyScore = score;
                                 result.ProcessingTimestampUTC = DateTime.UtcNow;
-
+                                _logger.Warn($"{nameof(AnomalyDetectionWorkerBase)}.{nameof(RunAsync)}", $"Persisted event to db");
                                 await _dbDriver.UpsertAnomalyDetectionResultAsync(result);
                             }
                         }
@@ -90,6 +88,7 @@ namespace AnomalyDetection.AnomalyDetections
 
         protected async Task<bool> AlreadyExists(AnomalyDetectionResult anomalyDetectionResult)
         {
+            return false;
             return await _dbDriver.GetAnomalyDetectionResultAsync(anomalyDetectionResult) != null;
         }
     }

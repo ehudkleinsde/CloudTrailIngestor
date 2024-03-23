@@ -1,19 +1,29 @@
 using Cache;
+using Confluent.Kafka;
 using Logging;
 using SimpleInjector;
 
 internal class Program
 {
+    private static string kafkaBootstrap = "kafka";
+
     private static void Main(string[] args)
     {
         var builder = WebApplication.CreateBuilder(args);
 
         var services = builder.Services;
-        services.AddHttpClient();
 
         builder.Services.AddControllers();
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddSwaggerGen();
+
+        var config = new ProducerConfig
+        {
+            BootstrapServers = $"{kafkaBootstrap}:9092",
+            //AllowAutoCreateTopics = true,
+        };
+
+        IProducer<string, string> producer = new ProducerBuilder<string, string>(config).Build();
 
         //### DI ###
         var container = new SimpleInjector.Container();
@@ -25,6 +35,8 @@ internal class Program
 
         container.Register<Common.Interfaces.IMemoryCacheClient, MemoryCacheClient>(Lifestyle.Singleton);
         container.Register<Common.Interfaces.ILogger>(() => new Serilogger("CloudTrailIngestor"), Lifestyle.Singleton);
+        container.Register<IProducer<string, string>>(() => producer, Lifestyle.Singleton);
+
         //### End DI ###
 
 
@@ -44,9 +56,9 @@ internal class Program
         app.UseSwagger();
         app.UseSwaggerUI();
 
-        app.UseHttpsRedirection();
+        //app.UseHttpsRedirection();
 
-        app.UseAuthorization();
+        //app.UseAuthorization();
 
         app.MapControllers();
 
