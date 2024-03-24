@@ -39,6 +39,8 @@ namespace Cassandra
         public async Task PrepareStatementAsync()
         {
             _preparedStatement = _session.Prepare($"INSERT INTO {KEY_SPACE}.{TABLE} ({KEY}) VALUES (?) IF NOT EXISTS;");
+            _preparedStatement.SetConsistencyLevel(ConsistencyLevel.One);
+
         }
 
         public async Task CreateTableAsync()
