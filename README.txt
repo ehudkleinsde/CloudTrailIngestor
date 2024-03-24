@@ -2,53 +2,65 @@ CloudTrailIngestor
 https://github.com/ehudkleinsde/CloudTrailIngestor/tree/redis
 
 # System Components:
-1. CloudTrailIngestor - REST API, sends CloudTrail events to a Kafka topic after schema validation and dedup against a local in-mem cache with 1hr TTL, and Redis cache.
+1. CloudTrailIngestor - REST API controller, gets CloudTrail events and adds them to a Kafka topic after schema validation and dedup 
+against a local in-mem cache with 1hr TTL, and Redis cache.
 
-2. Anomaly Detection backgroud service - runs 2 kinds of anomaly detectors, simulating 2 different anomalies detection types.
+2. Anomaly Detection backgroud service - runs 2 kinds of anomaly detectors, simulating 2 different anomalies detection mechanisms.
 Each anomaly detector runs multiple threads (hard coded 20 for demonstration purposes).
 
 3. CloudTrailProvider - For benchmark/stress test. Randomly generates and pushes CloudTrail events to the ingestor api at a high rate.
-(set to push 200K events via 2 concurrent worker threads. Its possible to run the program numerous times in Docker to ingest more events).
+(set to push 200K events via 2 concurrent worker threads. 
+Its possible to run the CloudTrailProvider numerous times to ingest more events, just restart the CloudTrailProvider container after it shuts down.
+You can delete the keys in Redis and the records in MongoDB, in between runs, or keep them).
 
 # Throughput acheived - stress test results:
-On an i7-13700K cpu desktop machine, 128GB DDR4 3600GHz, PCIe4 SSD nvme 7GB/s 1M IOPS, 
-Kafka set up with a topic, 40 partitions, 2 consumer groups, and Redis with all default settings, both simgle nodes:
-
-
+On an i7-13700K cpu desktop machine, 128GB DDR4 3600GHz, PCIe4 SSD nvme 7GB/s 1M IOPS, liquid cooling,
+Kafka set up with a topic, 40 partitions, 2 consumer groups, and Redis all default settings, both single nodes:
+47sec to ingest 200k events, i.e., 4.2k events per second. 15M in one hour.
 
 # Setup instructions:
-1. Install MongoDB Compass UI tool - https://www.mongodb.com/try/download/compass, so you can watch anomalies written to the db at real time.
-2. In the command line, navigate to CloudTrailIngestor. Run "docker-compose -f docker-compose.yml up -d". 
-This will start everything. Images are shared on DockerHub. This uses Kafka, ZooKeeper and MongoDB default images.
-3. Connect to the docker mongodb instace in MongoDB Compass UI tool via this connection string - "mongodb://localhost:27018/"
-4. On your local machine, open the CloudTrailIngestor API swagger UI - http://localhost:5255/swagger/index.html, so you can manually test.
-5. Install Redis GUI tool, to see the dedup set - https://redis.com/redis-enterprise/redis-insight/
-# Troubleshooting:
-1. If rate is low - When the containers load, run to verify kafka has 40 partitions (get containerID via docker ps):
-docker exec -it <containerID> kafka-topics.sh --bootstrap-server kafka:9092 --describe --topic cloudtrailtopic
+GUI tools:
+1. Install MongoDB Compass UI tool - https://www.mongodb.com/try/download/compass, so you can watch anomalies written to the db at real time. Connect on mongodb://localhost:27018/.
+2. Install Redis Insight GUI tool, to see event ids added to the dedup set in real time - https://redis.com/redis-enterprise/redis-insight/. Connect on 127.0.0.1:6379.
 
-STRESS Test Flow:
-0. Run compose.
-1. Wait for 1min, as the consumer and producer apps are dormant for the first 1min until kafka, ZooKeeper and mongo containers are up and running.
-2. On Docker, go to Containers, go to the cloudtrailprovider logs, wait for it to start generating events.
-3. Go to anomalydetection, watch it process events and persist them to the db.
-4. Go to MongoDB Compass, refresh the db list, see a new db was created.
-5. Check the content of the new db, click refresh several times, watch events being written at a high rate.
-6. Wait for the amount of items in the db to reach exactly 2M.
+Docker images:
+1. Using Docker compose file "docker-compose.redis.yml" attached to the email, build the environment: "docker-compose -f docker-compose.redis.yml up -d"
+
+API:
+1. On your local machine, open the CloudTrailIngestor API swagger UI - http://localhost:5255/swagger/index.html
+
+How to stress test:
+On Docker:
+0. Run compose. See the containers are up.
+1. Go to CloudTrailProvider container logs, see the program says its waiting, then says its generating events.
+2. When CloudTrailProvider says its generating events, go to MongoDB Compass, refresh the db list, see a new db was created.
+3. Check the content of the new db, click refresh several times, watch events being written at a high rate.
+4. Go to Redis Insight, refresh, see the set of event id keys.
+6. Wait for the amount of items in MongoDB to reach 200k.
 
 Simple manual test:
-(start by deleting the MongoDB db, so we get a fresh start)
+1. Delete the MongoDB db, and the Redis set, clear anomalydetection service logs on docker.
 
-Sanity: Post a new CloudTrail event:
-0. Delete MongoDB AnomalyDetectionResult db if exists. In Docker, clear anomalydetection logs
+Sanity test: Post a new CloudTrail event:
 1. Go to http://localhost:5255/swagger/index.html, the cloudTrailIngstor API swagger. Post a new message. The default swagger values are ok.
-2. See the log in anomalydetection logs on Docker. See the new event in the db.
+2. See the log in anomalydetection logs on Docker. See the new event in the db. See the event's ket in Redis.
 
-Dedup test:
+In-mem dedup test:
+1. Post the same cloudTrail event again.
+2. See no new events in the db and no logs in anomalydetection logs on docker.
+3. See the event id in the Redis key set.
+
+Redis based dedup:
+0. Restart the cloudTrailIngstor container, such that the api's in-mem cache gets deleted.
 1. Post the same cloudTrail event again.
 2. See no new events in the db and no logs in anomalydetection logs on docker.
 
-#Automatic tests:
+# Dedup mechanism - explanation:
+Done based on the combination of EventType and EventID.
+	a. In-mem: CloudTrailIngestor has an in-mem cache with 1hr TTL. Consumes about 1GB of RAM for every 1M unique messages. So the machine needs 15GB of RAM for 1hr TTL.
+	b. If key not found on in-mem cache, check Redis key set.
+
+#Automatic unit/e2e tests:
 1. Unfortunatley no time to write Unit and E2E tests, but these would be very easy via mocking the components.
 
 # Processing result example:
@@ -78,44 +90,21 @@ Dedup test:
 }
 
 Hardware Requirements:
-1. The CloudTrailIngestor service will have around 1GB of RAM available for every 1M ingested events within an hour, for dedup cache.
-The throughput acheived on my machine was 10k events per second, so 36M events per hour, so need around 36GB of cache for a whole hour, just for cache, 
-so the machine should have that plus additional RAM for OS and its other operations.
-
-# Dedup - Done based on the combination of EventType and EventID, only for events arriving less than 1hr apart.
-	a. CloudTrailIngestor has an in-mem cache with 1hr TTL. Consumes about 1GB of RAM for every 1M unique messages.
-	b. Anomaly Detection Workers - can check if an event already has a processing result in the db, and avoid recalculating.
-	DB is indexed appropriatley to support this. (currently commented out). This doesnt help in case the event's anomaly score is 0.
+1. The CloudTrailIngestor service will have around 1GB of RAM available for every 1M ingested events, for dedup cache.
+The throughput acheived on my machine was 5k events per second, so 18M events per hour, so need around 18GB of cache for a whole hour, just for cache.
+2. On Redis Insight, you can see that the set is 17MB, for 200K events. Let's round to 100MB for 1M events. So for each 1B events, we need 100GB of RAM for Redis (can be in multiple node machines).
 
 # Assumptions I made:
-1. If a duplicate event arrived 1Hr after the original event, its not a duplicate. 
-2. Dedup is done to save time and resources, but duplications in the db are not very severe, so dedup can be done on best effort and not a hard requirement.
-I have a commented out line in the code to check for dedups in the db if this isn't a valid assumption. It will be slower to dedup based on db, but the code creates the appropriate indexes.
-If the dedup is a strict requirement, the DB becomes read-heavy, and should be repliacted into read replicas to scale up reads.
-See: AlreadyExists function on AnomalyDetectionWorkerBase.cs.
-3. Events are uinquiley identified based on EventType and EventID concatanation.
+Events are uinquiley identified based on EventType and EventID concatanation.
 
-# Further performance tuning suggestions:
-Bottleneck seems to be in reading from Kafka and writing to the DB. DB is write heavy.
-
-Single machine optimizations:
-1. Considering writing to the DB in batches, instead of one event at a time, which is done currently. 
-This should include increasing the time until the consumer performs auto-commit to Kafka, such that if the write fails, the messages aren't removed.
-2. Optimize Kafka and mongoDB params, currently everything is set to default values.
-In MongoDB, consider journaling interval, compression. In Kafka consider lingering.
-3. Serialize remove property names when serializing cloudTrail events, to make the documents in the db lighter, e.g: in the db record, change
-"RequestId": "3fa85f64-5717-4562-b3fc-2c963f66afa6", to "rid": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
-4. If no need to dedup based on data in the db, can give up the index for faster writes.
-
-
-Multiple machines design:
+Priliminary multiple machines design suggestion:
 
 Load partitioning:
-1. Consider splitting the pipeline by EventType, Read events can be processed in one pipeline, the other types in another pipeline.
-Have dedicated Kafka and MongoDB instances for each.
-Rest API controller can decide where to write the event to based on the event type.
-Pros: Simple partition scheme. Cons: Increases infra complexity. No need for hashing based schema.
-Note: Create and Modify events are more interesting, security-wise and seperating them to a faster pipeline might serve business purposes better.
+1. Splitting pipeline by EventType, Read events can be processed in one pipeline, all the other types in another pipeline.
+Each pipeline will have a dedicated Kafka, Redis and MongoDB instances (not an even distribution but can have different setup sizes).
+2. Rest API controller can direct requests based on the event type.
+Pros: Simple partition scheme. No need for hashing based schema. Cons: Increases infra complexity. Not distributing load evenly.
+Note: Create and Modify CloudTrail events are more interesting, security-wise, and seperating them to a faster pipeline might serve business purposes better.
 
 Each pipeline will be agnostic to the events it writes, so both pipelines can handle all types of event types.
 Therefore, this will contribute to reseliency, as if one pipeline fails, can redirect traffic to the second one.
@@ -125,21 +114,6 @@ Therefore, this will contribute to reseliency, as if one pipeline fails, can red
 2. Anomaly detection workers - Very easy to add a new type of anomaly detection, just implement the abstract AnomalyDetectionWorkerBase class.
 Having the Kafka ConsumerConfig in the child class was my mistake, should be in the base class as well :-)
 3. Very easy to add more worker threads, can control how many worker threads of each type [there is probably a nicer way to handle the DI registration, sorry.. :-) ]
-
-# Alternative Dedup design suggestions:
-1. Implement a bloom filter - for each event identifier, run N hash functions, each returning an integer.
-Mod the integers and use them as indexes in a bit integer. If all N respective bits are set to 1, there is a probability that
-the event is duplicated - need to check the db. If even 1 bit is set to 0, the event is not duplicated.
-Lastly, set all the 0 bits encountered to 1.
-Not going into probabilistic details here.. :-)
-
-Dedup alternatives if assumption is invalid:
-1. As said in the beginning, I assumed dedup is good to have, but not a high priority:
-a. We don't get too many duplicated events from AWS
-b. When we do, they arrive within the same hour, and our API controller is stable and does not reset often so cache is solid
-c. Even if we get some in, its not a big deal, just consumes compute and storage resources.
-
-
 
 # Missing features:
 1. We currently don't have rate limiting and auth - add an API gateway to provide these, and redirect valid calls to the downstream.
