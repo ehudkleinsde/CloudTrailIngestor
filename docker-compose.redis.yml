@@ -4,7 +4,7 @@ services:
     image: ehudklein/cloudtrailingestor
     depends_on:
       - kafka
-      - cassandra
+      - redis
     ports:
       - "5255:8080"
     networks:
@@ -57,47 +57,19 @@ services:
     networks:
       - cloudnet
 
-  cassandra:
-    image: cassandra:latest
+  redis:
+    image: redis:latest
     ports:
-      - "9042:9042"
+      - "6379:6379"
     networks:
       - cloudnet
     volumes:
-      - cassandra_data_1:/var/lib/cassandra
-    environment:
-      CASSANDRA_CLUSTER_NAME: CloudCluster
-      CASSANDRA_DC: CloudDC
-      CASSANDRA_RACK: CloudRack
-    deploy:
-      resources:
-        limits:
-          cpus: '2.0'
-          #memory: 6G
-          
-  cassandra2:
-    image: cassandra:latest
-    networks:
-      - cloudnet
-    volumes:
-      - cassandra_data_2:/var/lib/cassandra
-    environment:
-      CASSANDRA_CLUSTER_NAME: CloudCluster
-      CASSANDRA_DC: CloudDC
-      CASSANDRA_RACK: CloudRack
-      CASSANDRA_SEEDS: cassandra
-    deploy:
-      resources:
-        limits:
-          cpus: '2.0'
-          #memory: 6G
-    depends_on:
-      - cassandra
+      - redis_data:/data
+    command: redis-server --appendonly yes  # Enable AOF persistence
 
 networks:
   cloudnet: {}
 
 volumes:
-  cassandra_data_1: {}
-  cassandra_data_2: {}
+  redis_data: {}
   mongodb_data: {}

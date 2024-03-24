@@ -17,6 +17,7 @@
     <ProjectReference Include="..\Cache\Cache.csproj" />
     <ProjectReference Include="..\CassandraDBDriver\CassandraDBDriver.csproj" />
     <ProjectReference Include="..\Common\Common.csproj" />
+    <ProjectReference Include="..\RedisDriver\RedisDriver.csproj" />
     <ProjectReference Include="..\Serilogger\Serilogger.csproj" />
   </ItemGroup>
 

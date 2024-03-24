@@ -26,7 +26,9 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CloudTrailProvider", "CloudTrailProvider\CloudTrailProvider.csproj", "{33D16A13-9C32-4BC2-9B22-9FB900046BBA}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CassandraDBDriver", "CassandraDBDriver\CassandraDBDriver.csproj", "{28830068-2B01-4B6B-BBCC-D8A93B69184C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CassandraDBDriver", "CassandraDBDriver\CassandraDBDriver.csproj", "{28830068-2B01-4B6B-BBCC-D8A93B69184C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RedisDriver", "RedisDriver\RedisDriver.csproj", "{A21E6746-9EB3-4CF9-A745-93660E84DD83}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -66,6 +68,10 @@ Global
 		{28830068-2B01-4B6B-BBCC-D8A93B69184C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{28830068-2B01-4B6B-BBCC-D8A93B69184C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{28830068-2B01-4B6B-BBCC-D8A93B69184C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A21E6746-9EB3-4CF9-A745-93660E84DD83}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A21E6746-9EB3-4CF9-A745-93660E84DD83}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A21E6746-9EB3-4CF9-A745-93660E84DD83}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A21E6746-9EB3-4CF9-A745-93660E84DD83}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -79,6 +85,7 @@ Global
 		{CBA74533-9EC7-4447-AE3B-A547A0300BBE} = {C320DAC7-3166-465D-8D7B-7C37ACE7D35D}
 		{33D16A13-9C32-4BC2-9B22-9FB900046BBA} = {C1A0625C-7B24-4D73-9975-CA13D510B95A}
 		{28830068-2B01-4B6B-BBCC-D8A93B69184C} = {C320DAC7-3166-465D-8D7B-7C37ACE7D35D}
+		{A21E6746-9EB3-4CF9-A745-93660E84DD83} = {C320DAC7-3166-465D-8D7B-7C37ACE7D35D}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {A378F8D2-EBE7-4BCF-9832-AB5EDDA27B02}

@@ -1,4 +1,3 @@
-using Cassandra;
 using Common.Contracts;
 using Common.Interfaces;
 using Confluent.Kafka;
@@ -14,8 +13,7 @@ namespace CoudTrailIngestor.Controllers
     {
         private Common.Interfaces.ILogger _logger;
         private IMemoryCacheClient _cache;
-        private ICassandraDBDriver _cassandraDBDriver;
-
+        private IRedisDriver _redisDriver;
         private TimeSpan _cacheTTL = TimeSpan.FromHours(1);
 
         private ProducerConfig _config;
@@ -24,12 +22,12 @@ namespace CoudTrailIngestor.Controllers
 
         private ConcurrentDictionary<string, Task> _tasks;
 
-        public CloudTrailIngestorController(Common.Interfaces.ILogger logger, IMemoryCacheClient cache, IProducer<string, string> producer, ICassandraDBDriver cassandraDBDriver)
+        public CloudTrailIngestorController(Common.Interfaces.ILogger logger, IMemoryCacheClient cache, IProducer<string, string> producer, IRedisDriver redisDriver)
         {
             _logger = logger;
             _cache = cache;
             _producer = producer;
-            _cassandraDBDriver = cassandraDBDriver;
+            _redisDriver = redisDriver;
 
             _tasks = new();
         }
@@ -62,9 +60,9 @@ namespace CoudTrailIngestor.Controllers
 
             try
             {
-                if (await _cassandraDBDriver.WriteIfNotExists(eventIdentifier))
+                if (await _redisDriver.AddKeyIfNotExists(eventIdentifier))
                 {
-                    _logger.Info($"{nameof(CloudTrailIngestorController)}.{nameof(PostCloudTrailAsync)}", $"Added to cassandra and kafka: {eventIdentifier}");
+                    _logger.Info($"{nameof(CloudTrailIngestorController)}.{nameof(PostCloudTrailAsync)}", $"Added to redis and kafka: {eventIdentifier}");
                     await EnqueueAsync(cloudTrail);
                 }
                 else

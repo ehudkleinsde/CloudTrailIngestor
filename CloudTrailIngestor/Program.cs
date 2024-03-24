@@ -3,6 +3,7 @@ using Cassandra;
 using Common.Interfaces;
 using Confluent.Kafka;
 using Logging;
+using Redis;
 using SimpleInjector;
 
 internal class Program
@@ -37,7 +38,8 @@ internal class Program
             options.AddAspNetCore().AddControllerActivation();
         });
 
-        container.Register<ICassandraDBDriver, CassandraDBDriver>(Lifestyle.Singleton);
+        //container.Register<ICassandraDBDriver, CassandraDBDriver>(Lifestyle.Singleton);
+        container.Register<IRedisDriver, RedisDriver>(Lifestyle.Singleton);
         container.Register<Common.Interfaces.IMemoryCacheClient, MemoryCacheClient>(Lifestyle.Singleton);
         container.Register<Common.Interfaces.ILogger>(() => new Serilogger("CloudTrailIngestor"), Lifestyle.Singleton);
         container.Register<IProducer<string, string>>(() => producer, Lifestyle.Singleton);
@@ -50,8 +52,8 @@ internal class Program
 
         container.Verify();
 
-        var service = container.GetInstance<ICassandraDBDriver>();
-        await Task.Delay(60_000);//let cassandra boot
+        var service = container.GetInstance<IRedisDriver>();
+        await Task.Delay(60_000);//let redis boot
         await service.InitAsync();
 
         // Configure the HTTP request pipeline.
