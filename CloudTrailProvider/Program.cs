@@ -9,8 +9,8 @@ internal class Program
 
         await Task.Delay(90000);
 
-        Task task1 = cloudTrailLoadProvider.ProvideAsync(500_000);
-        Task task2 = cloudTrailLoadProvider.ProvideAsync(500_000);
+        Task task1 = cloudTrailLoadProvider.ProvideAsync(100_000);
+        Task task2 = cloudTrailLoadProvider.ProvideAsync(100_000);
 
         await Task.WhenAll(task1, task2);
         await Console.Out.WriteLineAsync(DateTime.UtcNow.ToLongTimeString());

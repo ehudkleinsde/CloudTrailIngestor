@@ -1,0 +1,103 @@
+version: '3.8'
+services:
+  cloudtrailingestor:
+    image: ehudklein/cloudtrailingestor
+    depends_on:
+      - kafka
+      - cassandra
+    ports:
+      - "5255:8080"
+    networks:
+      - cloudnet
+
+  anomalydetection:
+    image: ehudklein/anomalydetection
+    depends_on:
+      - kafka
+      - localmongodb
+    networks:
+      - cloudnet
+      
+  cloudtrailprovider:
+    image: ehudklein/cloudtrailprovider
+    depends_on:
+      - cloudtrailingestor
+    networks:
+      - cloudnet
+
+  localmongodb:
+    image: mongo
+    ports:
+      - "27018:27017"
+    networks:
+      - cloudnet
+    volumes:
+      - mongodb_data:/data/db
+
+  zookeeper:
+    image: wurstmeister/zookeeper
+    ports:
+      - "2181:2181"
+    networks:
+      - cloudnet
+
+  kafka:
+    image: wurstmeister/kafka
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_CREATE_TOPICS: "cloudtrailtopic:40:1"
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INSIDE:PLAINTEXT,OUTSIDE:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: INSIDE://kafka:9092,OUTSIDE://localhost:9092
+      KAFKA_LISTENERS: INSIDE://0.0.0.0:9092,OUTSIDE://0.0.0.0:9093
+      KAFKA_INTER_BROKER_LISTENER_NAME: INSIDE
+    depends_on:
+      - zookeeper
+    networks:
+      - cloudnet
+
+  cassandra:
+    image: cassandra:latest
+    ports:
+      - "9042:9042"
+    networks:
+      - cloudnet
+    volumes:
+      - cassandra_data_1:/var/lib/cassandra
+    environment:
+      CASSANDRA_CLUSTER_NAME: CloudCluster
+      CASSANDRA_DC: CloudDC
+      CASSANDRA_RACK: CloudRack
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          #memory: 6G
+          
+  cassandra2:
+    image: cassandra:latest
+    networks:
+      - cloudnet
+    volumes:
+      - cassandra_data_2:/var/lib/cassandra
+    environment:
+      CASSANDRA_CLUSTER_NAME: CloudCluster
+      CASSANDRA_DC: CloudDC
+      CASSANDRA_RACK: CloudRack
+      CASSANDRA_SEEDS: cassandra
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          #memory: 6G
+    depends_on:
+      - cassandra
+
+networks:
+  cloudnet: {}
+
+volumes:
+  cassandra_data_1: {}
+  cassandra_data_2: {}
+  mongodb_data: {}
