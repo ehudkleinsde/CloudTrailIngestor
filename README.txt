@@ -1,13 +1,5 @@
 CloudTrailIngestor
-https://github.com/ehudkleinsde/CloudTrailIngestor
-
-Important Note: For the coding assignment, I chose a simple design due to time constraints, and based on some practical real life assumptions.
-In this text I will present it, and then explain a better design I would have implemented had I had more time.
-
-Specifically, I chose a design with simple dedup. I assumed we wish to avoid most of the duplications, but that:
-a. We don't get that many from AWS anyhow
-b. If we do get duplications from AWS, its usually within the first hour of the CloudTrail event happening
-c. If we have some duplications, it's not a big issue
+https://github.com/ehudkleinsde/CloudTrailIngestor/tree/redis
 
 # System Components:
 1. CloudTrailIngestor - REST API, sends CloudTrail events to a Kafka topic after schema validation and (simple) dedup.
@@ -43,7 +35,7 @@ All events were written to the DB on all runs.
 This will start everything. Images are shared on DockerHub. This uses Kafka, ZooKeeper and MongoDB default images.
 3. Connect to the docker mongodb instace in MongoDB Compass UI tool via this connection string - "mongodb://localhost:27018/"
 4. On your local machine, open the CloudTrailIngestor API swagger UI - http://localhost:5255/swagger/index.html, so you can manually test.
-
+5. Install Redis GUI tool, to see the dedup set - https://redis.com/redis-enterprise/redis-insight/
 # Troubleshooting:
 1. If rate is low - When the containers load, run to verify kafka has 40 partitions (get containerID via docker ps):
 docker exec -it <containerID> kafka-topics.sh --bootstrap-server kafka:9092 --describe --topic cloudtrailtopic
