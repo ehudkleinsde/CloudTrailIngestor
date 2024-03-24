@@ -8,7 +8,7 @@ namespace CloudTrailProvider
     internal class CloudTrailLoadProvider : ICloudTrailLoadProvider
     {
         private Uri _messageQueueUri = new Uri("http://cloudtrailingestor:8080/CloudTrailIngestor");
-        
+
         private Random _rnd;
 
         public CloudTrailLoadProvider()
@@ -34,8 +34,8 @@ namespace CloudTrailProvider
 
                 try
                 {
-                     await _httpClient.SendAsync(request);
-                    await Console.Out.WriteLineAsync("Sent newly random generated CloudTrailEvent");
+                    await _httpClient.SendAsync(request);
+                    //await Console.Out.WriteLineAsync("Sent newly random generated CloudTrailEvent");
                 }
                 catch (Exception ex)
                 {

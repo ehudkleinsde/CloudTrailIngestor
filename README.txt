@@ -2,32 +2,19 @@ CloudTrailIngestor
 https://github.com/ehudkleinsde/CloudTrailIngestor/tree/redis
 
 # System Components:
-1. CloudTrailIngestor - REST API, sends CloudTrail events to a Kafka topic after schema validation and (simple) dedup.
+1. CloudTrailIngestor - REST API, sends CloudTrail events to a Kafka topic after schema validation and dedup against a local in-mem cache with 1hr TTL, and Redis cache.
 
-2. Anomaly Detection backgroud service - has multiple instances of 2 kinds of worker threads, simulating 2 different anomalies detection types.
-It runs multiple worker threads for AnomalyType1 and AnomalyType2. These threads read events from Kafka and process them.
-They writes results to db when score > 0. They can perform dedup based on data in the db but currently this is commented out and dedup is only done on API side.
+2. Anomaly Detection backgroud service - runs 2 kinds of anomaly detectors, simulating 2 different anomalies detection types.
+Each anomaly detector runs multiple threads (hard coded 20 for demonstration purposes).
 
-3. CloudTrailProvider - For stress testing the system. Randomly generates and pushes CloudTrail events to the ingestor api at a high rate.
+3. CloudTrailProvider - For benchmark/stress test. Randomly generates and pushes CloudTrail events to the ingestor api at a high rate.
+(set to push 200K events via 2 concurrent worker threads. Its possible to run the program numerous times in Docker to ingest more events).
 
-4. Dedup - Done based on the combination of EventType and EventID, only for events arriving less than 1hr apart.
-	a. CloudTrailIngestor has an in-mem cache with 1hr TTL. Consumes about 1GB of RAM for every 1M unique messages.
-	b. Anomaly Detection Workers - can check if an event already has a processing result in the db, and avoid recalculating.
-	DB is indexed appropriatley to support this. (currently commented out). This doesnt help in case the event's anomaly score is 0.
-
-# Stress Test results:
+# Throughput acheived - stress test results:
 On an i7-13700K cpu desktop machine, 128GB DDR4 3600GHz, PCIe4 SSD nvme 7GB/s 1M IOPS, 
-Kafka set up with a topic, 40 partitions, 2 consumer groups:
+Kafka set up with a topic, 40 partitions, 2 consumer groups, and Redis with all default settings, both simgle nodes:
 
-Single anomaly type, 20 detection worker threads:
-1. Pushing 1M randomly generated CloudTrail events through a single REST api app, via 2 concurrent pusher threads, into Kafka, took 95sec, 10.5k events per second.
-2. Total processing time, until finishing generating 1M records on MongoDB, took 108sec, 9.25k events per second.
 
-Two anomaly types, 20 worker threads each (40 total):
-1. Pushing all CloudTrail events - same as above
-2. Total processing time, generating 2M records on MongoDB, took 204sec, ~5k events per second (linear).
-
-All events were written to the DB on all runs.
 
 # Setup instructions:
 1. Install MongoDB Compass UI tool - https://www.mongodb.com/try/download/compass, so you can watch anomalies written to the db at real time.
@@ -94,6 +81,11 @@ Hardware Requirements:
 1. The CloudTrailIngestor service will have around 1GB of RAM available for every 1M ingested events within an hour, for dedup cache.
 The throughput acheived on my machine was 10k events per second, so 36M events per hour, so need around 36GB of cache for a whole hour, just for cache, 
 so the machine should have that plus additional RAM for OS and its other operations.
+
+# Dedup - Done based on the combination of EventType and EventID, only for events arriving less than 1hr apart.
+	a. CloudTrailIngestor has an in-mem cache with 1hr TTL. Consumes about 1GB of RAM for every 1M unique messages.
+	b. Anomaly Detection Workers - can check if an event already has a processing result in the db, and avoid recalculating.
+	DB is indexed appropriatley to support this. (currently commented out). This doesnt help in case the event's anomaly score is 0.
 
 # Assumptions I made:
 1. If a duplicate event arrived 1Hr after the original event, its not a duplicate. 
