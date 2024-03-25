@@ -8,11 +8,13 @@ namespace MongoDB
     {
         private MongoClient _client;
         private readonly string _dbName;
+        private bool _indexInPlace;
 
         public MongoDBDriver(string connStr, string dbName)
         {
             _client = new MongoClient(connStr);
             _dbName = dbName;
+            _indexInPlace = false;
         }
 
         public async Task<AnomalyDetectionResult> GetAnomalyDetectionResultAsync(AnomalyDetectionResult anomalyDetectionResult)
@@ -43,6 +45,8 @@ namespace MongoDB
 
         private async Task CreateIndexAsync()
         {
+            if (_indexInPlace) { return; }
+
             IMongoCollection<AnomalyDetectionResult> OneMinute1Datacollection = _client.GetDatabase(nameof(AnomalyDetectionResult))
                    .GetCollection<AnomalyDetectionResult>(nameof(AnomalyDetectionResult));
 
@@ -52,6 +56,8 @@ namespace MongoDB
                 .Ascending(x => x.CloudTrail.EventType);
 
             await OneMinute1Datacollection.Indexes.CreateOneAsync(new CreateIndexModel<AnomalyDetectionResult>(anomalyDetectionResultIndex));
+
+            _indexInPlace = true;
         }
     }
 }

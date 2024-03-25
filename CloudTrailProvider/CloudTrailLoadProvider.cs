@@ -10,10 +10,12 @@ namespace CloudTrailProvider
         private Uri _messageQueueUri = new Uri("http://cloudtrailingestor:8080/CloudTrailIngestor");
 
         private Random _rnd;
+        private HttpClient _httpClient;
 
         public CloudTrailLoadProvider()
         {
             _rnd = new Random();
+            _httpClient = new HttpClient();
         }
 
         public async Task ProvideAsync(int amount)
@@ -23,7 +25,6 @@ namespace CloudTrailProvider
             int provided = 0;
             CloudTrail random;
             HttpRequestMessage request;
-            HttpClient _httpClient = new HttpClient();
 
             while (provided < amount)
             {
