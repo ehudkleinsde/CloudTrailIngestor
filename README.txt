@@ -22,7 +22,7 @@ Time to POST all the events, which includes schema validation and writing them t
 
 Scenarios:
 1. Single Anomaly type: 15 seconds end to end, for a total avg throughput of 200k/15=~13k events/s, 47M events per hour.
-2. 2 anomaly types (so we write 400k events to MongoDB) - 30 seconds end to end (scales linearly), for a total avg throughput of 200k/30=~7k events/s, 25M events per hour.
+2. 2 anomaly types (so we write 400k events to MongoDB) - 21 seconds end to end, for a total avg throughput of 200k/21=~9k events/s, 35M events per hour.
 
 # Setup instructions:
 GUI tools:

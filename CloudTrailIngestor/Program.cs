@@ -46,14 +46,13 @@ internal class Program
 
         //### End DI ###
 
-
         var app = builder.Build();
         app.Services.UseSimpleInjector(container);
 
         container.Verify();
 
         var service = container.GetInstance<IRedisDriver>();
-        await Task.Delay(15_000);
+        await Task.Delay(8_000);
         await service.InitAsync();
 
         // Configure the HTTP request pipeline.
