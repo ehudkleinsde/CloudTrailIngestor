@@ -16,12 +16,13 @@ You can delete the keys in Redis and the records in MongoDB, in between runs, or
 # Throughput acheived - stress test results:
 On an i7-13700K cpu desktop machine, 128GB DDR4 3600GHz, PCIe4 SSD nvme 7GB/s 1M IOPS, liquid cooling,
 Kafka set up with a topic, 40 partitions, 2 consumer groups, and Redis all default settings, both single nodes,
+MongoDB has a composite index on EventType and EventId
 Pushing events to the api for all scenarios is done via 50 concurrent threads, each pushing 4k events.
-Time to push all the events, which includes schema validation and writing them to Kafka, is ~13sec (obviously the consumers kick in before this ends).
+Time to POST all the events, which includes schema validation and writing them to Kafka, is ~13sec (obviously the consumers kick in before this ends).
 
 Scenarios:
-1. Single Anomaly type, MongoDB has a composite index on EventType and EventId: 17 seconds end to end, for a total avg throughput of 200k/17=~12k events/s, 43M events per hour.
-2. 2 anomaly types (so we write 400k events to MongoDB) - 35 seconds end to end (scales linearly), for a total avg throughput of 200k/35=~6k events/s, 22M events per hour.
+1. Single Anomaly type: 15 seconds end to end, for a total avg throughput of 200k/15=~13k events/s, 47M events per hour.
+2. 2 anomaly types (so we write 400k events to MongoDB) - 30 seconds end to end (scales linearly), for a total avg throughput of 200k/30=~7k events/s, 25M events per hour.
 
 # Setup instructions:
 GUI tools:

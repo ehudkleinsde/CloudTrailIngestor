@@ -17,7 +17,7 @@ namespace AnomalyDetection
 
         public async Task RunAsync()
         {
-            await Task.Delay(40_000);
+            await Task.Delay(30_000);
             List<Task> workers = _workers.Select(w => Task.Run(() => w.RunAsync())).ToList();
             await Task.WhenAll(workers);
         }

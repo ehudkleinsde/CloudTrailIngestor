@@ -53,7 +53,7 @@ internal class Program
         container.Verify();
 
         var service = container.GetInstance<IRedisDriver>();
-        await Task.Delay(30_000);
+        await Task.Delay(15_000);
         await service.InitAsync();
 
         // Configure the HTTP request pipeline.
