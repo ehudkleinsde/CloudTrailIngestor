@@ -15,8 +15,13 @@ You can delete the keys in Redis and the records in MongoDB, in between runs, or
 
 # Throughput acheived - stress test results:
 On an i7-13700K cpu desktop machine, 128GB DDR4 3600GHz, PCIe4 SSD nvme 7GB/s 1M IOPS, liquid cooling,
-Kafka set up with a topic, 40 partitions, 2 consumer groups, and Redis all default settings, both single nodes:
-47sec to ingest 200k events, i.e., 4.2k events per second. 15M in one hour.
+Kafka set up with a topic, 40 partitions, 2 consumer groups, and Redis all default settings, both single nodes,
+Pushing events to the api for all scenarios is done via 50 concurrent threads, each pushing 4k events.
+Time to push all the events, which includes schema validation and writing them to Kafka, is ~13sec (obviously the consumers kick in before this ends).
+
+Scenarios:
+1. Single Anomaly type, MongoDB has a composite index on EventType and EventId: 17 seconds end to end, for a total avg throughput of 200k/17=~12k events/s, 43M events per hour.
+2. 2 anomaly types (so we write 400k events to MongoDB) - 35 seconds end to end (scales linearly), for a total avg throughput of 200k/35=~6k events/s, 22M events per hour.
 
 # Setup instructions:
 GUI tools:
@@ -37,6 +42,9 @@ On Docker:
 3. Check the content of the new db, click refresh several times, watch events being written at a high rate.
 4. Go to Redis Insight, refresh, see the set of event id keys.
 6. Wait for the amount of items in MongoDB to reach 200k.
+7. Copy the time when the CloudTrailProvider started generating events from it's logs.
+8. Copy the time when the anomalydetection processed its last event.
+9. Calculate the different to the end to end processing time.
 
 Simple manual test:
 1. Delete the MongoDB db, and the Redis set, clear anomalydetection service logs on docker.
