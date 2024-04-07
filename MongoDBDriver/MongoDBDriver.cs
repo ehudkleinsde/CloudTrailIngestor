@@ -47,7 +47,7 @@ namespace MongoDB
         {
             if (_indexInPlace) { return; }
 
-            IMongoCollection<AnomalyDetectionResult> OneMinute1Datacollection = _client.GetDatabase(nameof(AnomalyDetectionResult))
+            IMongoCollection<AnomalyDetectionResult> anomalyDetectionCollection = _client.GetDatabase(nameof(AnomalyDetectionResult))
                    .GetCollection<AnomalyDetectionResult>(nameof(AnomalyDetectionResult));
 
             var anomalyDetectionResultIndex = Builders<AnomalyDetectionResult>.IndexKeys
@@ -55,7 +55,7 @@ namespace MongoDB
                 .Ascending(x => x.CloudTrail.EventId)
                 .Ascending(x => x.CloudTrail.EventType);
 
-            await OneMinute1Datacollection.Indexes.CreateOneAsync(new CreateIndexModel<AnomalyDetectionResult>(anomalyDetectionResultIndex));
+            await anomalyDetectionCollection.Indexes.CreateOneAsync(new CreateIndexModel<AnomalyDetectionResult>(anomalyDetectionResultIndex));
 
             _indexInPlace = true;
         }
